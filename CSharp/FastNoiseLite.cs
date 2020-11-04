@@ -142,13 +142,17 @@ public class FastNoiseLite
     private DomainWarpType mDomainWarpType = DomainWarpType.OpenSimplex2;
     private TransformType3D mWarpTransformType3D = TransformType3D.DefaultOpenSimplex2;
     private float mDomainWarpAmp = 1.0f;
+    private int mCoordMask = 0x7;
 
     /// <summary>
     /// Create new FastNoise object with optional seed
     /// </summary>
-    public FastNoiseLite(int seed = 1337)
+    public FastNoiseLite(int seed = 1337, int mask = 0x7)
     {
+        // TODO invalid arg check
+
         SetSeed(seed);
+        SetCoordMask(mask);
     }
 
     /// <summary>
@@ -289,6 +293,14 @@ public class FastNoiseLite
         mDomainWarpType = domainWarpType;
         UpdateWarpTransformType3D();
     }
+
+    /// <summary>
+    /// Sets the mask
+    /// </summary>
+    /// <remarks>
+    /// Default: 0x7
+    /// </remarks>
+    public void SetCoordMask(int mask) { mCoordMask = mask; }
 
 
     /// <summary>
@@ -1086,8 +1098,17 @@ public class FastNoiseLite
 
         int i = FastFloor(x);
         int j = FastFloor(y);
+        int inci = i + 1;
+        int incj = j + 1;
         float xi = (float)(x - i);
         float yi = (float)(y - j);
+        if (mCoordMask > 0)
+        {
+            i &= mCoordMask;
+            j &= mCoordMask;
+            inci &= mCoordMask;
+            incj &= mCoordMask;
+        }
 
         float t = (xi + yi) * G2;
         float x0 = (float)(xi - t);
@@ -1095,6 +1116,8 @@ public class FastNoiseLite
 
         i *= PrimeX;
         j *= PrimeY;
+        inci *= PrimeX;
+        incj *= PrimeY;
 
         float n0, n1, n2;
 
@@ -1111,7 +1134,7 @@ public class FastNoiseLite
         {
             float x2 = x0 + (2 * (float)G2 - 1);
             float y2 = y0 + (2 * (float)G2 - 1);
-            n2 = (c * c) * (c * c) * GradCoord(seed, i + PrimeX, j + PrimeY, x2, y2);
+            n2 = (c * c) * (c * c) * GradCoord(seed, inci, incj, x2, y2);
         }
 
         if (y0 > x0)
@@ -1122,7 +1145,7 @@ public class FastNoiseLite
             if (b <= 0) n1 = 0;
             else
             {
-                n1 = (b * b) * (b * b) * GradCoord(seed, i, j + PrimeY, x1, y1);
+                n1 = (b * b) * (b * b) * GradCoord(seed, i, incj, x1, y1);
             }
         }
         else
@@ -1133,7 +1156,7 @@ public class FastNoiseLite
             if (b <= 0) n1 = 0;
             else
             {
-                n1 = (b * b) * (b * b) * GradCoord(seed, i + PrimeX, j, x1, y1);
+                n1 = (b * b) * (b * b) * GradCoord(seed, inci, j, x1, y1);
             }
         }
 
